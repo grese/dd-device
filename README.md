@@ -32,4 +32,3 @@ Once your device is connected, and communicating with the IDE plugin, we should 
 * Learn more about the [Pymakr plugin](https://atom.io/packages/pymakr)
 * Learn more about the [WiPy 3.0](https://pycom.io/product/wipy-3-0/)
 * Learn more about the [DHT22 Humidity/Temp sensor](https://www.adafruit.com/product/385)
-* Learn about the [DHT CircuitPython guide](https://learn.adafruit.com/dht/dht-circuitpython-code)
