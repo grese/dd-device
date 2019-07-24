@@ -21,7 +21,7 @@ import src.event as event
 device_info_path = '/flash/device-info.json'
 
 # Event cache size:
-cache_size = 40320 # every 30 seconds for 1 week ((60 / 15) * 60 * 24 * 7)
+cache_size = 40320 # every 15 seconds for 1 week ((60 / 15) * 60 * 24 * 7)
 
 def create_device_info_file():
     device_uuid = str(uuid.uuid4())
