@@ -1,15 +1,28 @@
+"""
+UUID
+A class for generating UUIDs
+"""
 import os
-import ubinascii
+import ubinascii # pylint: disable=E0401
 
+ # pylint: disable=C0103
+class UUID: # pylint: disable=C1001
+    """
+    UUID
 
-class UUID:
-    def __init__(self, bytes):
+    A class for generating UUIDs
+    """
+    def __init__(self, bytes): # pylint: disable=W0622
         if len(bytes) != 16:
             raise ValueError('bytes arg must be 16 bytes long')
         self._bytes = bytes
 
     @property
     def hex(self):
+        """
+        hex
+        returns hex representation of the UUID bytes
+        """
         return ubinascii.hexlify(self._bytes).decode()
 
     def __str__(self):

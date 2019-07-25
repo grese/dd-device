@@ -6,85 +6,113 @@ Device object;
 - handles setting up of sensor object
 - handles recording of event objects into cache
 """
-
 import os
 import time
-import ujson
-import uio
-from machine import Pin
 from lib.dht import DHT
 import lib.lru_cache as lru_cache
 import lib.uuid as uuid
 import src.event as event
+# MicroPython libraries:
+import ujson # pylint: disable=F0401
+import uio   # pylint: disable=F0401
+from machine import Pin # pylint: disable=F0401
 
 # Path to json file where device info is stored
-device_info_path = '/flash/device-info.json'
+DEVICE_INFO_PATH = '/flash/device-info.json'
 
 # Event cache size:
-cache_size = 40320 # every 15 seconds for 1 week ((60 / 15) * 60 * 24 * 7)
+CACHE_SIZE = 40320 # every 15 seconds for 1 week ((60 / 15) * 60 * 24 * 7)
+
 
 def create_device_info_file():
+    """
+    create_device_info_file
+    Creates the device info json file with a fresh deviceID
+    """
     device_uuid = str(uuid.uuid4())
     last_reset_time = time.time()
     try:
-        f = uio.open(device_info_path, mode='w')
-        data = {
-            "device_id": device_uuid,
-            "last_reset_time": last_reset_time,
-            "user_id": ""
-        }
-        f.write(ujson.dumps(data))
-        f.close()
-    except OSError as e:
-        print("Could not create device info file: ", e)
+        with uio.open(DEVICE_INFO_PATH, mode='w') as outfile:
+            data = {
+                "device_id": device_uuid,
+                "last_reset_time": last_reset_time,
+                "user_id": ""
+            }
+            outfile.write(ujson.dumps(data))
+        outfile.close()
+    except OSError as err:
+        print("Could not create device info file: ", err)
 
 def does_file_exist(filename):
+    """
+    does_file_exist
+    Returns true if the given filename exists, false otherwise.
+    """
     exists = False
     try:
-        with uio.open(filename, 'r') as fh:
+        with uio.open(filename, mode='r'):
             exists = True
-    except:
+    except OSError:
         pass
     return exists
 
-class Device:
+class Device: # pylint: disable=C1001
+    """
+    Device
+    Represents the device itself.  Exposes methods for interacting with sensors,
+    connecting bluetooth, etc.
+    """
     def __init__(self):
+        self.device_id = None
+        self.last_reset_time = 0
+        self.user_id = None
         self.init_device_info()
-        self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN),1)
-        self.events = lru_cache.LRUCache(cache_size)
+        self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
+        self.events = lru_cache.LRUCache(CACHE_SIZE)
 
     def init_device_info(self):
-        if not does_file_exist(device_info_path):
+        """
+        init_device_info
+        Reads device info if it exists.  Creates a new device info file otherwise.
+        """
+        if not does_file_exist(DEVICE_INFO_PATH):
             create_device_info_file()
 
         self.read_device_info()
 
     def read_device_info(self):
+        """
+        read_device_info
+        Reads the device info JSON file, parses it, and assigns data to device object
+        """
         try:
-            with uio.open(device_info_path, 'r') as f:
-                device_data = ujson.loads(f.read())
+            with uio.open(DEVICE_INFO_PATH, mode='r') as infile:
+                device_data = ujson.loads(infile.read())
                 self.device_id = device_data['device_id']
                 self.last_reset_time = device_data['last_reset_time']
                 self.user_id = device_data['user_id']
-            f.close()
-        except OSError as e:
-            print("Could not open ", device_info_path, e)
+            infile.close()
+        except OSError as err:
+            print("Could not open ", DEVICE_INFO_PATH, err)
 
     def reset_device_info(self):
-        os.remove(device_info_path)
+        """
+        reset_device_info
+        Removes the existing device info file, and creates a new one
+        """
+        os.remove(DEVICE_INFO_PATH)
         self.init_device_info()
 
     def create_event(self):
+        """
+        create_event
+        Reads sensor data, and adds an event object to the cache
+        """
         dht_result = self.dht_sensor.read()
         if dht_result.is_valid():
-            print('Creating event.')
+            print('Creating event.') # pylint: disable=C0325
             new_event = event.Event(dht_result.humidity, dht_result.temperature)
             self.events.set(new_event.event_id, new_event)
-            self.log_event(new_event)
+            new_event.log() # log event data to console
         else:
             print('Invalid sensor data.', dht_result)
-
-    def log_event(self, event):
-        print('Humidity: ', event.humidity)
-        print('Temperature: ', event.temperature)
-        print()

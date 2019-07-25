@@ -1,9 +1,17 @@
 """
-:mod:`lru_cache`
+LRUCache
+
+A simple Least recently used cache
 ======================
 https://www.kunxi.org/2014/05/lru-cache-in-python/
 """
-class LRUCache:
+
+# pylint: disable=C0103
+class LRUCache: # pylint: disable=C1001
+    """
+    LRUCache
+    least recently used cache
+    """
     def __init__(self, capacity):
         self.capacity = capacity
         self.tm = 0
@@ -11,6 +19,10 @@ class LRUCache:
         self.lru = {}
 
     def get(self, key):
+        """
+        get
+        returns the cache item for a given key
+        """
         if key in self.cache:
             self.lru[key] = self.tm
             self.tm += 1
@@ -18,9 +30,13 @@ class LRUCache:
         return -1
 
     def set(self, key, value):
+        """
+        set
+        sets the key equal to the value in the cache
+        """
         if len(self.cache) >= self.capacity:
             # find the LRU entry
-            old_key = min(self.lru.keys(), key=lambda k:self.lru[k])
+            old_key = min(self.lru.keys(), key=lambda k: self.lru[k])
             self.cache.pop(old_key)
             self.lru.pop(old_key)
         self.cache[key] = value
