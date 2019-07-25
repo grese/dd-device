@@ -9,7 +9,7 @@ Device object;
 import os
 import time
 from lib.dht import DHT
-import lib.lru_cache as lru_cache
+from lib.lru_cache import LRUCache, calculate_cache_size
 import lib.uuid as uuid
 import src.event as event
 # MicroPython libraries:
@@ -19,10 +19,6 @@ from machine import Pin # pylint: disable=F0401
 
 # Path to json file where device info is stored
 DEVICE_INFO_PATH = '/flash/device-info.json'
-
-# Event cache size:
-CACHE_SIZE = 40320 # every 15 seconds for 1 week ((60 / 15) * 60 * 24 * 7)
-
 
 def create_device_info_file():
     """
@@ -62,13 +58,13 @@ class Device: # pylint: disable=C1001
     Represents the device itself.  Exposes methods for interacting with sensors,
     connecting bluetooth, etc.
     """
-    def __init__(self):
+    def __init__(self, duration, interval):
         self.device_id = None
         self.last_reset_time = 0
         self.user_id = None
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
-        self.events = lru_cache.LRUCache(CACHE_SIZE)
+        self.events = LRUCache(calculate_cache_size(duration, interval))
 
     def init_device_info(self):
         """
