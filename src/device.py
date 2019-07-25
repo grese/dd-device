@@ -12,6 +12,7 @@ from lib.dht import DHT
 from lib.lru_cache import LRUCache, calculate_cache_size
 import lib.uuid as uuid
 import src.event as event
+from src.bluetooth import BluetoothServer
 # MicroPython libraries:
 import ujson # pylint: disable=F0401
 import uio   # pylint: disable=F0401
@@ -65,6 +66,7 @@ class Device: # pylint: disable=C1001
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
         self.events = LRUCache(calculate_cache_size(duration, interval))
+        self.bluetooth_server = BluetoothServer()
 
     def init_device_info(self):
         """
