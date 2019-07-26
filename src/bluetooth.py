@@ -11,7 +11,7 @@ BT_ADV_PREFIX = 'dd-device-'
 BT_MANUFACTURER_NAME = 'diaper-detective'
 BT_DEVICE_VERSION = 'v0.0.1'
 
-class BluetoothServer: # pylint: disable=C1001,R0903
+class BluetoothServer: # pylint: disable=C1001,R0903,R0902
     """
     BluetoothServer
     Advertises bluetooth services, handles connection and clients
@@ -75,17 +75,17 @@ class BluetoothServer: # pylint: disable=C1001,R0903
         elif events & Bluetooth.CLIENT_DISCONNECTED:
             self.__on_client_disconnected(bt_o)
 
-    def __on_client_connected(self, bt_o):
+    def __on_client_connected(self, bt_o): # pylint: disable=R0201
         print('Client connected: ', bt_o.get_adv(), bt_o.uuid)
 
-    def __on_client_disconnected(self, bt_o):
+    def __on_client_disconnected(self, bt_o): # pylint: disable=R0201
         print('Client disconnected: ', bt_o.get_adv(), bt_o.uuid)
 
-    def __on_pair_add(self, data):
+    def __on_pair_add(self, data): # pylint: disable=R0201
         print("pair_add: ", data)
 
-    def __on_pair_remove(self, data):
+    def __on_pair_remove(self, data): # pylint: disable=R0201
         print("pair_remove: ", data)
 
-    def __on_sync_data(self, data):
+    def __on_sync_data(self, data): # pylint: disable=R0201
         print("sync_data: ", data)
