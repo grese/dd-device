@@ -6,12 +6,11 @@ Device object;
 - handles setting up of sensor object
 - handles recording of event objects into cache
 """
-import os
-import time
 from lib.dht import DHT
 from lib.lru_cache import LRUCache, calculate_cache_size
-from lib.uuid import uuid4_str, bt_uuid
 import src.event as event
+from src.device_info import DeviceInfo
+from src.device_info import generate_device_info_file, write_device_info_file, reset_device_info
 from src.bluetooth import BluetoothServer
 # MicroPython libraries:
 import ujson # pylint: disable=F0401
@@ -28,19 +27,8 @@ def create_device_info_file():
     """
     try:
         with uio.open(DEVICE_INFO_PATH, mode='w') as outfile:
-            data = {
-                "device_id": uuid4_str(),
-                "last_reset_time": time.time(),
-                "user_id": "",
-                "client_ids": [],
-                "bt_id": bt_uuid(),
-                "bt_sync_svc_id": bt_uuid(),
-                "bt_pair_svc_id": bt_uuid(),
-                "bt_pair_add_char_id": bt_uuid(),
-                "bt_pair_remove_char_id": bt_uuid(),
-                "bt_sync_data_char_id": bt_uuid()
-            }
-            outfile.write(ujson.dumps(data))
+            info = DeviceInfo(generate_initial_values=True)
+            outfile.write(info.to_json())
         outfile.close()
     except OSError as err:
         print("Could not create device info file: ", err)
@@ -65,15 +53,14 @@ class Device: # pylint: disable=C1001
     connecting bluetooth, etc.
     """
     def __init__(self, duration, interval):
-        self.device_id = None
-        self.last_reset_time = 0
-        self.user_id = None
-        self.client_ids = []
-        self.bluetooth_ids = {}
+        # define class properties
+        self.device_info = None
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
         self.events = LRUCache(calculate_cache_size(duration, interval))
-        self.bluetooth_server = BluetoothServer(self.bluetooth_ids, self.client_ids)
+        self.bluetooth_server = BluetoothServer(
+            self.device_info.get_bluetooth_ids(),
+            self.device_info.client_ids)
 
     def init_device_info(self):
         """
@@ -81,7 +68,7 @@ class Device: # pylint: disable=C1001
         Reads device info if it exists.  Creates a new device info file otherwise.
         """
         if not does_file_exist(DEVICE_INFO_PATH):
-            create_device_info_file()
+            generate_device_info_file()
 
         self.read_device_info()
 
@@ -93,29 +80,25 @@ class Device: # pylint: disable=C1001
         try:
             with uio.open(DEVICE_INFO_PATH, mode='r') as infile:
                 device_data = ujson.loads(infile.read())
-                self.device_id = device_data.get('device_id')
-                self.last_reset_time = device_data.get('last_reset_time')
-                self.user_id = device_data.get('user_id')
-                self.client_ids = device_data.get('client_ids')
-                self.bluetooth_ids = {
-                    "bt_id": device_data.get('bt_id') or '',
-                    "bt_pair_svc_id": device_data.get('bt_pair_svc_id') or '',
-                    "bt_sync_svc_id": device_data.get('bt_sync_svc_id') or '',
-                    "bt_pair_add_char_id": device_data.get('bt_pair_add_char_id') or '',
-                    "bt_pair_remove_char_id": device_data.get('bt_pair_remove_char_id') or '',
-                    "bt_sync_data_char_id": device_data.get('bt_sync_data_char_id') or ''
-                }
+                self.device_info = DeviceInfo(device_data)
             infile.close()
         except OSError as err:
             print("Could not open ", DEVICE_INFO_PATH, err)
+
+    def update_device_info(self):
+        """
+        update_device_info
+        Writes updates to the device info file.
+        """
+        write_device_info_file(self.device_info)
 
     def reset_device_info(self):
         """
         reset_device_info
         Removes the existing device info file, and creates a new one
         """
-        os.remove(DEVICE_INFO_PATH)
-        self.init_device_info()
+        reset_device_info()
+        self.read_device_info()
 
     def create_event(self):
         """

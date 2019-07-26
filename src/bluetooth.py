@@ -16,7 +16,7 @@ class BluetoothServer: # pylint: disable=C1001,R0903
     BluetoothServer
     Advertises bluetooth services, handles connection and clients
     """
-    def __init__(self, bluetooth_ids={}, client_ids=[]): # pylint: disable=W0102
+    def __init__(self, bluetooth_ids={}, client_ids=set()): # pylint: disable=W0102
         # Read bluetooth IDs:
         self.__bt_id = bluetooth_ids.get('bt_id')
         self.__bt_pair_svc_id = bluetooth_ids.get('bt_pair_svc_id')
