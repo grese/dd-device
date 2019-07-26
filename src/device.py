@@ -6,12 +6,12 @@ Device object;
 - handles setting up of sensor object
 - handles recording of event objects into cache
 """
-import os
-import time
 from lib.dht import DHT
 from lib.lru_cache import LRUCache, calculate_cache_size
-import lib.uuid as uuid
 import src.event as event
+from src.device_info import DeviceInfo
+from src.device_info import generate_device_info_file, write_device_info_file, reset_device_info
+from src.bluetooth import BluetoothServer
 # MicroPython libraries:
 import ujson # pylint: disable=F0401
 import uio   # pylint: disable=F0401
@@ -25,16 +25,10 @@ def create_device_info_file():
     create_device_info_file
     Creates the device info json file with a fresh deviceID
     """
-    device_uuid = str(uuid.uuid4())
-    last_reset_time = time.time()
     try:
         with uio.open(DEVICE_INFO_PATH, mode='w') as outfile:
-            data = {
-                "device_id": device_uuid,
-                "last_reset_time": last_reset_time,
-                "user_id": ""
-            }
-            outfile.write(ujson.dumps(data))
+            info = DeviceInfo(generate_initial_values=True)
+            outfile.write(info.to_json())
         outfile.close()
     except OSError as err:
         print("Could not create device info file: ", err)
@@ -59,12 +53,14 @@ class Device: # pylint: disable=C1001
     connecting bluetooth, etc.
     """
     def __init__(self, duration, interval):
-        self.device_id = None
-        self.last_reset_time = 0
-        self.user_id = None
+        # define class properties
+        self.device_info = None
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
         self.events = LRUCache(calculate_cache_size(duration, interval))
+        self.bluetooth_server = BluetoothServer(
+            self.device_info.get_bluetooth_ids(),
+            self.device_info.client_ids)
 
     def init_device_info(self):
         """
@@ -72,7 +68,7 @@ class Device: # pylint: disable=C1001
         Reads device info if it exists.  Creates a new device info file otherwise.
         """
         if not does_file_exist(DEVICE_INFO_PATH):
-            create_device_info_file()
+            generate_device_info_file()
 
         self.read_device_info()
 
@@ -84,20 +80,25 @@ class Device: # pylint: disable=C1001
         try:
             with uio.open(DEVICE_INFO_PATH, mode='r') as infile:
                 device_data = ujson.loads(infile.read())
-                self.device_id = device_data['device_id']
-                self.last_reset_time = device_data['last_reset_time']
-                self.user_id = device_data['user_id']
+                self.device_info = DeviceInfo(device_data)
             infile.close()
         except OSError as err:
             print("Could not open ", DEVICE_INFO_PATH, err)
+
+    def update_device_info(self):
+        """
+        update_device_info
+        Writes updates to the device info file.
+        """
+        write_device_info_file(self.device_info)
 
     def reset_device_info(self):
         """
         reset_device_info
         Removes the existing device info file, and creates a new one
         """
-        os.remove(DEVICE_INFO_PATH)
-        self.init_device_info()
+        reset_device_info()
+        self.read_device_info()
 
     def create_event(self):
         """

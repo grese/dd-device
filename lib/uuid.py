@@ -39,3 +39,12 @@ def uuid4():
     random[6] = (random[6] & 0x0F) | 0x40
     random[8] = (random[8] & 0x3F) | 0x80
     return UUID(bytes=random)
+
+def uuid4_str():
+    """
+    Generates a string UUID
+    """
+    return str(uuid4())
+
+def bt_uuid():
+    return ubinascii.hexlify(os.urandom(8)).decode()
