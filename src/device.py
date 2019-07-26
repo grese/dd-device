@@ -10,7 +10,7 @@ import os
 import time
 from lib.dht import DHT
 from lib.lru_cache import LRUCache, calculate_cache_size
-import lib.uuid as uuid
+from lib.uuid import uuid4_str, bt_uuid
 import src.event as event
 from src.bluetooth import BluetoothServer
 # MicroPython libraries:
@@ -26,14 +26,19 @@ def create_device_info_file():
     create_device_info_file
     Creates the device info json file with a fresh deviceID
     """
-    device_uuid = str(uuid.uuid4())
-    last_reset_time = time.time()
     try:
         with uio.open(DEVICE_INFO_PATH, mode='w') as outfile:
             data = {
-                "device_id": device_uuid,
-                "last_reset_time": last_reset_time,
-                "user_id": ""
+                "device_id": uuid4_str(),
+                "last_reset_time": time.time(),
+                "user_id": "",
+                "client_ids": [],
+                "bt_id": bt_uuid(),
+                "bt_sync_svc_id": bt_uuid(),
+                "bt_pair_svc_id": bt_uuid(),
+                "bt_pair_add_char_id": bt_uuid(),
+                "bt_pair_remove_char_id": bt_uuid(),
+                "bt_sync_data_char_id": bt_uuid()
             }
             outfile.write(ujson.dumps(data))
         outfile.close()
@@ -63,10 +68,12 @@ class Device: # pylint: disable=C1001
         self.device_id = None
         self.last_reset_time = 0
         self.user_id = None
+        self.client_ids = []
+        self.bluetooth_ids = {}
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
         self.events = LRUCache(calculate_cache_size(duration, interval))
-        self.bluetooth_server = BluetoothServer()
+        self.bluetooth_server = BluetoothServer(self.bluetooth_ids, self.client_ids)
 
     def init_device_info(self):
         """
@@ -86,9 +93,18 @@ class Device: # pylint: disable=C1001
         try:
             with uio.open(DEVICE_INFO_PATH, mode='r') as infile:
                 device_data = ujson.loads(infile.read())
-                self.device_id = device_data['device_id']
-                self.last_reset_time = device_data['last_reset_time']
-                self.user_id = device_data['user_id']
+                self.device_id = device_data.get('device_id')
+                self.last_reset_time = device_data.get('last_reset_time')
+                self.user_id = device_data.get('user_id')
+                self.client_ids = device_data.get('client_ids')
+                self.bluetooth_ids = {
+                    "bt_id": device_data.get('bt_id') or '',
+                    "bt_pair_svc_id": device_data.get('bt_pair_svc_id') or '',
+                    "bt_sync_svc_id": device_data.get('bt_sync_svc_id') or '',
+                    "bt_pair_add_char_id": device_data.get('bt_pair_add_char_id') or '',
+                    "bt_pair_remove_char_id": device_data.get('bt_pair_remove_char_id') or '',
+                    "bt_sync_data_char_id": device_data.get('bt_sync_data_char_id') or ''
+                }
             infile.close()
         except OSError as err:
             print("Could not open ", DEVICE_INFO_PATH, err)

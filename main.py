@@ -16,7 +16,7 @@ from src.device import Device
 pycom.heartbeat(False) # pylint: disable=E1101
 
 EVENT_CACHE_DURATION = 7 # days
-EVENT_INTERVAL = 15 # seconds
+EVENT_INTERVAL = 5 # seconds
 
 # Initialize Device object
 DD_DEVICE = Device(EVENT_CACHE_DURATION, EVENT_INTERVAL)
