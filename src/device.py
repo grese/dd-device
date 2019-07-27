@@ -86,7 +86,6 @@ class Device: # pylint: disable=C1001
             self.device_info.client_ids.add(client_id)
             self.update_device_info()
             self.bluetooth_server.update_client_ids(self.device_info.client_ids)
-            print('ON PAIR CLIENT! ', self.device_info.client_ids)
 
     def __on_client_unpaired(self, client_id):
         """
@@ -97,4 +96,3 @@ class Device: # pylint: disable=C1001
             self.device_info.client_ids.discard(client_id)
             self.update_device_info()
             self.bluetooth_server.update_client_ids(self.device_info.client_ids)
-            print('ON UNPAIR CLIENT! ', self.device_info.client_ids)
