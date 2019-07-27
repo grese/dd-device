@@ -13,7 +13,6 @@ import uio # pylint: disable=F0401
 DEVICE_INFO_PATH = '/flash/device-info.json'
 
 # pylint: disable=C0325
-
 class DeviceInfo: # pylint: disable=C1001,R0902
     """
     DeviceInfo
@@ -80,6 +79,7 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             "bt_sync_data_char_id": self.bt_sync_data_char_id
             })
 
+# Functions:
 
 def write_device_info_file(device_info):
     """
@@ -102,7 +102,8 @@ def generate_device_info_file():
     generate_device_info_file
     Creates a new device_info_file
     """
-    write_device_info_file(DeviceInfo(generate_initial_values=True))
+    new_device_info = DeviceInfo(generate_initial_values=True)
+    write_device_info_file(new_device_info)
 
 def reset_device_info():
     """
@@ -111,3 +112,42 @@ def reset_device_info():
     """
     os.remove(DEVICE_INFO_PATH)
     generate_device_info_file()
+
+def read_device_info_file():
+    """
+    read_device_info_file
+    Reads device info from disk. Returns a DeviceInfo object.
+    """
+    device_info = None
+    try:
+        with uio.open(DEVICE_INFO_PATH, mode='r') as infile:
+            device_data = ujson.loads(infile.read())
+            device_info = DeviceInfo(device_data)
+        infile.close()
+    except ValueError as err:
+        print("Could not parse device info file JSON", err)
+    except OSError as err:
+        print("Could not open device info file.", err)
+
+    return device_info
+
+def does_device_info_file_exist():
+    """
+    does_device_info_file_exist
+    returns true if device info file exists, false otherwise.
+    """
+    return does_file_exist(DEVICE_INFO_PATH)
+
+def does_file_exist(filename):
+    """
+    does_file_exist
+    Returns true if the given filename exists, false otherwise.
+    """
+    exists = False
+    try:
+        with uio.open(filename, mode='r') as infofile:
+            exists = True
+        infofile.close()
+    except OSError:
+        pass
+    return exists
