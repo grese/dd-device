@@ -5,13 +5,16 @@ Contains the Device class. Used for interacting with device & managing data.
 """
 from lib.dht import DHT
 from lib.lru_cache import LRUCache, calculate_cache_size
-import src.event as event
+from src.sensor_data import SensorData
+from src.event import Event
 from src.device_info import generate_device_info_file, write_device_info_file
 from src.device_info import reset_device_info, read_device_info_file, does_device_info_file_exist
 from src.bluetooth import BluetoothServer
 # MicroPython libraries:
 import ujson  # pylint: disable=F0401
 from machine import Pin # pylint: disable=F0401
+
+HUMIDITY_THRESHOLD = 90.0
 
 class Device: # pylint: disable=C1001
     """
@@ -24,14 +27,15 @@ class Device: # pylint: disable=C1001
         self.device_info = None
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
-        self.events = LRUCache(calculate_cache_size(duration, interval))
+        self.sensor_data = LRUCache(calculate_cache_size(duration, interval))
+        self.events = []
         self.bluetooth_server = BluetoothServer(
             device_id=self.device_info.device_id,
             bluetooth_ids=self.device_info.get_bluetooth_ids(),
             client_ids=self.device_info.client_ids,
             on_client_paired=self.__on_client_paired,
             on_client_unpaired=self.__on_client_unpaired,
-            get_events_data=self.get_events_data_json)
+            get_sync_data=self.get_sync_data_json)
 
     def init_device_info(self):
         """
@@ -66,29 +70,47 @@ class Device: # pylint: disable=C1001
         reset_device_info()
         self.read_device_info()
 
-    def create_event(self):
+    def read_sensor_data(self):
         """
-        create_event
-        Reads sensor data, and adds an event object to the cache
+        read_sensor_data
+        Reads sensor data, and adds an SensorData object to the cache
         """
         dht_result = self.dht_sensor.read()
         if dht_result.is_valid():
-            new_event = event.Event(dht_result.humidity, dht_result.temperature)
-            self.events.set(new_event.event_id, new_event)
-            new_event.log() # log event data to console
+            data = SensorData(dht_result.humidity, dht_result.temperature)
+            self.sensor_data.set(data.data_id, data)
+            data.log_data() # log data to console
         else:
             print('Invalid sensor data.', dht_result)
 
-    def get_events_data_json(self):
+    def check_for_event(self):
         """
-        get_events_data_json
-        Returns events as stringified JSON
+        check_for_event
+        Analyzes sensor data, and creates a new Event object if necessary
         """
-        items = []
-        for key in self.events.cache:
-            evt = self.events.cache[key]
-            items.append(evt.to_dict())
-        return ujson.dumps({"events": items})
+        last_data = None
+        for key in self.sensor_data.cache:
+            item = self.sensor_data.cache[key]
+            if not last_data or item.timestamp > last_data.timestamp:
+                last_data = item
+        if last_data and last_data.humidity >= HUMIDITY_THRESHOLD:
+            event = Event()
+            self.events.append(event)
+            print("Event detected! ", last_data.humidity)
+
+    def get_sync_data_json(self):
+        """
+        get_sync_data_json
+        Returns sensor data and events as stringified JSON
+        """
+        data = []
+        for key in self.sensor_data.cache:
+            item = self.sensor_data.cache[key]
+            data.append(item.to_dict())
+        events = []
+        for event in self.events:
+            events.append(event.to_dict())
+        return ujson.dumps({"sensor_data": data, "events": events})
 
     def __on_client_paired(self, client_id):
         """

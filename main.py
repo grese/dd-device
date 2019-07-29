@@ -15,12 +15,13 @@ from src.device import Device
 # Turn off blinking LED.
 pycom.heartbeat(False) # pylint: disable=E1101
 
-EVENT_CACHE_DURATION = 7 # days
-EVENT_INTERVAL = 5 # seconds
+DATA_CACHE_DURATION = 7 # days
+DATA_INTERVAL = 10 # seconds
 
 # Initialize Device object
-DD_DEVICE = Device(EVENT_CACHE_DURATION, EVENT_INTERVAL)
+DD_DEVICE = Device(DATA_CACHE_DURATION, DATA_INTERVAL)
 
-for r in range(10):
-    DD_DEVICE.create_event() # create humidity_temp event.
-    time.sleep(EVENT_INTERVAL) # sleep until time to create new event
+for r in range(20):
+    DD_DEVICE.read_sensor_data() # create humidity_temp reading.
+    DD_DEVICE.check_for_event() # check sensor data for event
+    time.sleep(DATA_INTERVAL) # sleep until time to create new reading
