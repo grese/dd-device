@@ -23,7 +23,7 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
                  client_ids=set(),
                  on_client_paired=None,
                  on_client_unpaired=None,
-                 get_events_data=None):
+                 get_sync_data=None):
         # Read bluetooth IDs:
         self.__device_id = device_id
         self.__bt_id = bluetooth_ids.get('bt_id')
@@ -35,7 +35,7 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__bt_sync_read_char_id = bluetooth_ids.get('bt_sync_read_char_id')
         self.__on_client_paired = on_client_paired
         self.__on_client_unpaired = on_client_unpaired
-        self.__get_events_data = get_events_data
+        self.__get_sync_data = get_sync_data
         # Save currently paired clients
         self.client_ids = client_ids
         # Setup bluetooth & configure advertisement.
@@ -126,6 +126,6 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         __on_sync_read
         Triggered from the sync-data characteristic.
         """
-        data = self.__get_events_data()
+        data = self.__get_sync_data()
         ch.value(data)
         print("sync_read: ", data)
