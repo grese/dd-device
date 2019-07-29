@@ -6,6 +6,7 @@ Bluetooth connection, services, and client management
 """
 
 from network import Bluetooth # pylint: disable=F0401
+from lib.uuid import uuid2bytes
 
 BT_ADV_PREFIX = 'dd-device-'
 BT_MANUFACTURER_NAME = 'diaper-detective'
@@ -16,60 +17,69 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
     BluetoothServer
     Advertises bluetooth services, handles connection and clients
     """
-    def __init__(self, # pylint: disable=W0102
+    def __init__(self, # pylint: disable=W0102,R0913
+                 device_id='',
                  bluetooth_ids={},
                  client_ids=set(),
                  on_client_paired=None,
-                 on_client_unpaired=None):
+                 on_client_unpaired=None,
+                 get_events_data=None):
         # Read bluetooth IDs:
+        self.__device_id = device_id
         self.__bt_id = bluetooth_ids.get('bt_id')
         self.__bt_pair_svc_id = bluetooth_ids.get('bt_pair_svc_id')
+        self.__bt_unpair_svc_id = bluetooth_ids.get('bt_unpair_svc_id')
         self.__bt_sync_svc_id = bluetooth_ids.get('bt_sync_svc_id')
-        self.__bt_pair_add_char_id = bluetooth_ids.get('bt_pair_add_char_id')
-        self.__bt_pair_remove_char_id = bluetooth_ids.get('bt_pair_remove_char_id')
-        self.__bt_sync_data_char_id = bluetooth_ids.get('bt_sync_data_char_id')
+        self.__bt_pair_write_char_id = bluetooth_ids.get('bt_pair_write_char_id')
+        self.__bt_unpair_write_char_id = bluetooth_ids.get('bt_unpair_write_char_id')
+        self.__bt_sync_read_char_id = bluetooth_ids.get('bt_sync_read_char_id')
         self.__on_client_paired = on_client_paired
         self.__on_client_unpaired = on_client_unpaired
+        self.__get_events_data = get_events_data
         # Save currently paired clients
         self.client_ids = client_ids
         # Setup bluetooth & configure advertisement.
         self.bluetooth = Bluetooth()
         self.bluetooth.set_advertisement(
-            name=BT_ADV_PREFIX + str(self.__bt_id),
-            service_uuid=self.__bt_id,
+            name=BT_ADV_PREFIX + self.__device_id,
+            service_uuid=uuid2bytes(self.__bt_id),
             manufacturer_data=BT_MANUFACTURER_NAME,
             service_data=BT_DEVICE_VERSION)
         # Create services:
-        pair_service = self.bluetooth.service(uuid=self.__bt_pair_svc_id)
-        sync_service = self.bluetooth.service(uuid=self.__bt_sync_svc_id)
+        pair_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_pair_svc_id))
+        unpair_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_unpair_svc_id))
+        sync_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_sync_svc_id))
         # Create characteristics for services:
-        pair_add = pair_service.characteristic(
-            uuid=self.__bt_pair_add_char_id,
+        pair_write = pair_service.characteristic(
+            uuid=uuid2bytes(self.__bt_pair_write_char_id),
             properties=Bluetooth.PROP_WRITE,
             value=None)
-        pair_remove = pair_service.characteristic(
-            uuid=self.__bt_pair_remove_char_id,
+        unpair_write = unpair_service.characteristic(
+            uuid=uuid2bytes(self.__bt_unpair_write_char_id),
             properties=Bluetooth.PROP_WRITE,
             value=None)
-        sync_data = sync_service.characteristic(
-            uuid=self.__bt_sync_data_char_id,
+        sync_read = sync_service.characteristic(
+            uuid=uuid2bytes(self.__bt_sync_read_char_id),
             properties=Bluetooth.PROP_READ,
             value=None)
         # Add callbacks:
         self.bluetooth.callback(
             trigger=Bluetooth.CLIENT_CONNECTED | Bluetooth.CLIENT_DISCONNECTED,
             handler=self.__on_connection_status_changed)
-        pair_add.callback(
+        pair_write.callback(
             trigger=Bluetooth.CHAR_WRITE_EVENT,
-            handler=self.__on_pair_add,
+            handler=self.__on_pair_write,
             arg=None)
-        pair_remove.callback(
+        unpair_write.callback(
             trigger=Bluetooth.CHAR_WRITE_EVENT,
-            handler=self.__on_pair_remove,
+            handler=self.__on_unpair_write,
             arg=None)
-        sync_data.callback(
+        sync_read.callback(
             trigger=Bluetooth.CHAR_READ_EVENT,
-            handler=self.__on_sync_data,
+            handler=self.__on_sync_read,
             arg=None)
         # Start advertising:
         self.bluetooth.advertise(True)
@@ -96,20 +106,26 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         adv = bt_o.get_adv()
         print('Client disconnected: ', adv)
 
-    def __on_pair_add(self, ch): # pylint: disable=R0201,C0103
+    def __on_pair_write(self, ch): # pylint: disable=R0201,C0103
         """
-        __on_pair_add
-        Triggered from the pair-add characteristic.
+        __on_pair_write
+        Triggered from the pair-write characteristic.
         Expected data is the unique "client id" from the app.
         """
         client_id = ch.value().decode()
         self.__on_client_paired(client_id)
-        print("pair_add: ", client_id)
+        print("pair_write: ", client_id)
 
-    def __on_pair_remove(self, ch): # pylint: disable=R0201,C0103
+    def __on_unpair_write(self, ch): # pylint: disable=R0201,C0103
         client_id = ch.value().decode()
         self.__on_client_unpaired(client_id)
-        print("pair_remove: ", client_id)
+        print("unpair_write: ", client_id)
 
-    def __on_sync_data(self, ch): # pylint: disable=R0201,C0103
-        print("sync_data: ", ch)
+    def __on_sync_read(self, ch): # pylint: disable=R0201,C0103
+        """
+        __on_sync_read
+        Triggered from the sync-data characteristic.
+        """
+        data = self.__get_events_data()
+        ch.value(data)
+        print("sync_read: ", data)

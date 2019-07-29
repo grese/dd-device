@@ -10,6 +10,7 @@ from src.device_info import generate_device_info_file, write_device_info_file
 from src.device_info import reset_device_info, read_device_info_file, does_device_info_file_exist
 from src.bluetooth import BluetoothServer
 # MicroPython libraries:
+import ujson  # pylint: disable=F0401
 from machine import Pin # pylint: disable=F0401
 
 class Device: # pylint: disable=C1001
@@ -25,10 +26,12 @@ class Device: # pylint: disable=C1001
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
         self.events = LRUCache(calculate_cache_size(duration, interval))
         self.bluetooth_server = BluetoothServer(
+            device_id=self.device_info.device_id,
             bluetooth_ids=self.device_info.get_bluetooth_ids(),
             client_ids=self.device_info.client_ids,
             on_client_paired=self.__on_client_paired,
-            on_client_unpaired=self.__on_client_unpaired)
+            on_client_unpaired=self.__on_client_unpaired,
+            get_events_data=self.get_events_data_json)
 
     def init_device_info(self):
         """
@@ -70,12 +73,22 @@ class Device: # pylint: disable=C1001
         """
         dht_result = self.dht_sensor.read()
         if dht_result.is_valid():
-            print('Creating event.') # pylint: disable=C0325
             new_event = event.Event(dht_result.humidity, dht_result.temperature)
             self.events.set(new_event.event_id, new_event)
             new_event.log() # log event data to console
         else:
             print('Invalid sensor data.', dht_result)
+
+    def get_events_data_json(self):
+        """
+        get_events_data_json
+        Returns events as stringified JSON
+        """
+        items = []
+        for key in self.events.cache:
+            evt = self.events.cache[key]
+            items.append(evt.to_dict())
+        return ujson.dumps({"events": items})
 
     def __on_client_paired(self, client_id):
         """

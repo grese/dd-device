@@ -26,3 +26,15 @@ class Event: # pylint: disable=C1001, R0903
         print('Humidity: ', self.humidity)
         print('Temperature: ', self.temperature)
         print()
+
+    def to_dict(self):
+        """
+        to_json
+        returns event data as dictionary
+        """
+        return {
+            "event_id": self.event_id,
+            "timestamp": self.timestamp,
+            "humidity": self.humidity,
+            "temperature": self.temperature
+            }

@@ -46,5 +46,18 @@ def uuid4_str():
     """
     return str(uuid4())
 
-def bt_uuid():
+def uuid2bytes(uuid):
+    """
+    uuid2bytes
+    Converts uuid string to a little-endian bytes object
+    """
+    uuid = uuid.encode().replace(b'-', b'')
+    tmp = ubinascii.unhexlify(uuid)
+    return bytes(reversed(tmp))
+
+def generate_device_id():
+    """
+    generate_device_id
+    Generates a random 8 byte id string
+    """
     return ubinascii.hexlify(os.urandom(8)).decode()
