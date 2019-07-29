@@ -43,7 +43,6 @@ class LRUCache: # pylint: disable=C1001
         self.lru[key] = self.tm
         self.tm += 1
 
-
 def calculate_cache_size(duration, interval):
     """
     calculate_cache_size

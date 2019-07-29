@@ -5,12 +5,19 @@ device_info.py
 
 import os
 import time
-from lib.uuid import uuid4_str, bt_uuid
+from lib.uuid import uuid4_str, generate_device_id
 import ujson # pylint: disable=F0401
 import uio # pylint: disable=F0401
 
 # Path to json file where device info is stored
 DEVICE_INFO_PATH = '/flash/device-info.json'
+
+BT_PAIR_SVC_ID = '0c060381-c0e0-4078-bcde-6fb7dbed763b'
+BT_UNPAIR_SVC_ID = 'd66b351a-0d06-4341-a050-a854aa552a95'
+BT_SYNC_SVC_ID = '9dce6733-198c-46e3-b138-9cce67b3d96c'
+BT_PAIR_WRITE_CHAR_ID = '369bcde6-73b9-4cae-97eb-753a9dcee773'
+BT_UNPAIR_WRITE_CHAR_ID = 'b95caed7-eb75-4a9d-8e67-b359acd6eb75'
+BT_SYNC_READ_CHAR_ID = 'cae57239-9c4e-4793-89e4-72b9dc6e379b'
 
 # pylint: disable=C0325
 class DeviceInfo: # pylint: disable=C1001,R0902
@@ -25,10 +32,11 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             self.client_ids = set(initial_values.get('client_ids') or [])
             self.bt_id = initial_values.get('bt_id') or ''
             self.bt_pair_svc_id = initial_values.get('bt_pair_svc_id') or ''
+            self.bt_unpair_svc_id = initial_values.get('bt_unpair_svc_id') or ''
             self.bt_sync_svc_id = initial_values.get('bt_sync_svc_id') or ''
-            self.bt_pair_add_char_id = initial_values.get('bt_pair_add_char_id') or ''
-            self.bt_pair_remove_char_id = initial_values.get('bt_pair_remove_char_id') or ''
-            self.bt_sync_data_char_id = initial_values.get('bt_sync_data_char_id') or ''
+            self.bt_pair_write_char_id = initial_values.get('bt_pair_write_char_id') or ''
+            self.bt_unpair_write_char_id = initial_values.get('bt_unpair_write_char_id') or ''
+            self.bt_sync_read_char_id = initial_values.get('bt_sync_read_char_id') or ''
 
         if generate_initial_values:
             self.__generate_initial_values()
@@ -38,15 +46,16 @@ class DeviceInfo: # pylint: disable=C1001,R0902
         init_values
         initializes the device info object with fresh data.
         """
-        self.device_id = uuid4_str()
+        self.device_id = generate_device_id()
         self.last_reset_time = time.time()
         self.client_ids = set()
-        self.bt_id = bt_uuid()
-        self.bt_pair_svc_id = bt_uuid()
-        self.bt_sync_svc_id = bt_uuid()
-        self.bt_pair_add_char_id = bt_uuid()
-        self.bt_pair_remove_char_id = bt_uuid()
-        self.bt_sync_data_char_id = bt_uuid()
+        self.bt_id = uuid4_str()
+        self.bt_pair_svc_id = BT_PAIR_SVC_ID
+        self.bt_unpair_svc_id = BT_UNPAIR_SVC_ID
+        self.bt_sync_svc_id = BT_SYNC_SVC_ID
+        self.bt_pair_write_char_id = BT_PAIR_WRITE_CHAR_ID
+        self.bt_unpair_write_char_id = BT_UNPAIR_WRITE_CHAR_ID
+        self.bt_sync_read_char_id = BT_SYNC_READ_CHAR_ID
 
     def get_bluetooth_ids(self):
         """
@@ -57,9 +66,10 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             "bt_id": self.bt_id,
             "bt_sync_svc_id": self.bt_sync_svc_id,
             "bt_pair_svc_id": self.bt_pair_svc_id,
-            "bt_pair_add_char_id": self.bt_pair_add_char_id,
-            "bt_pair_remove_char_id": self.bt_pair_remove_char_id,
-            "bt_sync_data_char_id": self.bt_sync_data_char_id
+            "bt_unpair_svc_id": self.bt_unpair_svc_id,
+            "bt_pair_write_char_id": self.bt_pair_write_char_id,
+            "bt_unpair_write_char_id": self.bt_unpair_write_char_id,
+            "bt_sync_read_char_id": self.bt_sync_read_char_id
             }
 
     def to_json(self):
@@ -72,11 +82,12 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             "last_reset_time": self.last_reset_time,
             "client_ids": list(self.client_ids or []),
             "bt_id": self.bt_id,
-            "bt_sync_svc_id": self.bt_sync_svc_id,
             "bt_pair_svc_id": self.bt_pair_svc_id,
-            "bt_pair_add_char_id": self.bt_pair_add_char_id,
-            "bt_pair_remove_char_id": self.bt_pair_remove_char_id,
-            "bt_sync_data_char_id": self.bt_sync_data_char_id
+            "bt_unpair_svc_id": self.bt_unpair_svc_id,
+            "bt_sync_svc_id": self.bt_sync_svc_id,
+            "bt_pair_write_char_id": self.bt_pair_write_char_id,
+            "bt_unpair_write_char_id": self.bt_unpair_write_char_id,
+            "bt_sync_read_char_id": self.bt_sync_read_char_id
             })
 
 # Functions:
