@@ -23,7 +23,8 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
                  client_ids=set(),
                  on_client_paired=None,
                  on_client_unpaired=None,
-                 get_sync_data=None):
+                 get_next_sync_data=None,
+                 get_next_sync_event=None):
         # Read bluetooth IDs:
         self.__device_id = device_id
         self.__bt_id = bluetooth_ids.get('bt_id')
@@ -35,7 +36,8 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__bt_sync_read_char_id = bluetooth_ids.get('bt_sync_read_char_id')
         self.__on_client_paired = on_client_paired
         self.__on_client_unpaired = on_client_unpaired
-        self.__get_sync_data = get_sync_data
+        self.__get_next_sync_data = get_next_sync_data
+        self.__get_next_sync_event = get_next_sync_event
         # Save currently paired clients
         self.client_ids = client_ids
         # Setup bluetooth & configure advertisement.
@@ -106,7 +108,7 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         adv = bt_o.get_adv()
         print('Client disconnected: ', adv)
 
-    def __on_pair_write(self, ch): # pylint: disable=R0201,C0103
+    def __on_pair_write(self, ch): # pylint: disable=C0103
         """
         __on_pair_write
         Triggered from the pair-write characteristic.
@@ -116,16 +118,25 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__on_client_paired(client_id)
         print("pair_write: ", client_id)
 
-    def __on_unpair_write(self, ch): # pylint: disable=R0201,C0103
+    def __on_unpair_write(self, ch): # pylint: disable=C0103
         client_id = ch.value().decode()
         self.__on_client_unpaired(client_id)
         print("unpair_write: ", client_id)
 
-    def __on_sync_read(self, ch): # pylint: disable=R0201,C0103
+    def __on_sync_read(self, ch): # pylint: disable=C0103
         """
         __on_sync_read
         Triggered from the sync-data characteristic.
         """
-        data = self.__get_sync_data()
+        data = self.__get_next_sync_data()
         ch.value(data)
         print("sync_read: ", data)
+
+    def __on_sync_event_read(self, ch): # pylint: disable=C0103
+        """
+        __on_sync_event_read
+        Triggered from the sync-event characteristic.
+        """
+        data = self.__get_next_sync_event()
+        ch.value(data)
+        print("sync_event_read: ", data)

@@ -17,9 +17,14 @@ pycom.heartbeat(False) # pylint: disable=E1101
 
 DATA_CACHE_DURATION = 7 # days
 DATA_INTERVAL = 10 # seconds
+EVENTS_COUNT = 100 # max # of events stored in memory.
 
 # Initialize Device object
-DD_DEVICE = Device(DATA_CACHE_DURATION, DATA_INTERVAL)
+DD_DEVICE = Device(
+    duration=DATA_CACHE_DURATION,
+    interval=DATA_INTERVAL,
+    num_events=EVENTS_COUNT
+    )
 
 for r in range(20):
     DD_DEVICE.read_sensor_data() # create humidity_temp reading.
