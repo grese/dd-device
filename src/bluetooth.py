@@ -23,21 +23,23 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
                  client_ids=set(),
                  on_client_paired=None,
                  on_client_unpaired=None,
-                 get_next_sync_data=None,
-                 get_next_sync_event=None):
+                 get_next_data_item=None,
+                 get_next_event_item=None):
         # Read bluetooth IDs:
         self.__device_id = device_id
         self.__bt_id = bluetooth_ids.get('bt_id')
         self.__bt_pair_svc_id = bluetooth_ids.get('bt_pair_svc_id')
         self.__bt_unpair_svc_id = bluetooth_ids.get('bt_unpair_svc_id')
-        self.__bt_sync_svc_id = bluetooth_ids.get('bt_sync_svc_id')
-        self.__bt_pair_write_char_id = bluetooth_ids.get('bt_pair_write_char_id')
-        self.__bt_unpair_write_char_id = bluetooth_ids.get('bt_unpair_write_char_id')
-        self.__bt_sync_read_char_id = bluetooth_ids.get('bt_sync_read_char_id')
+        self.__bt_data_svc_id = bluetooth_ids.get('bt_data_svc_id')
+        self.__bt_event_svc_id = bluetooth_ids.get('bt_event_svc_id')
+        self.__bt_pair_char_id = bluetooth_ids.get('bt_pair_char_id')
+        self.__bt_unpair_char_id = bluetooth_ids.get('bt_unpair_char_id')
+        self.__bt_data_char_id = bluetooth_ids.get('bt_data_char_id')
+        self.__bt_event_char_id = bluetooth_ids.get('bt_event_char_id')
         self.__on_client_paired = on_client_paired
         self.__on_client_unpaired = on_client_unpaired
-        self.__get_next_sync_data = get_next_sync_data
-        self.__get_next_sync_event = get_next_sync_event
+        self.__get_next_data_item = get_next_data_item
+        self.__get_next_event_item = get_next_event_item
         # Save currently paired clients
         self.client_ids = client_ids
         # Setup bluetooth & configure advertisement.
@@ -49,39 +51,55 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
             service_data=BT_DEVICE_VERSION)
         # Create services:
         pair_service = self.bluetooth.service(
-            uuid=uuid2bytes(self.__bt_pair_svc_id))
+            uuid=uuid2bytes(self.__bt_pair_svc_id),
+            isprimary=True)
         unpair_service = self.bluetooth.service(
-            uuid=uuid2bytes(self.__bt_unpair_svc_id))
-        sync_service = self.bluetooth.service(
-            uuid=uuid2bytes(self.__bt_sync_svc_id))
+            uuid=uuid2bytes(self.__bt_unpair_svc_id),
+            isprimary=True)
+        data_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_data_svc_id),
+            isprimary=True)
+        event_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_event_svc_id),
+            isprimary=True)
+
         # Create characteristics for services:
-        pair_write = pair_service.characteristic(
-            uuid=uuid2bytes(self.__bt_pair_write_char_id),
+        self.__pair_char = pair_service.characteristic(
+            uuid=uuid2bytes(self.__bt_pair_char_id),
             properties=Bluetooth.PROP_WRITE,
             value=None)
-        unpair_write = unpair_service.characteristic(
-            uuid=uuid2bytes(self.__bt_unpair_write_char_id),
+        self.__unpair_char = unpair_service.characteristic(
+            uuid=uuid2bytes(self.__bt_unpair_char_id),
             properties=Bluetooth.PROP_WRITE,
             value=None)
-        sync_read = sync_service.characteristic(
-            uuid=uuid2bytes(self.__bt_sync_read_char_id),
+        self.__data_char = data_service.characteristic(
+            uuid=uuid2bytes(self.__bt_data_char_id),
             properties=Bluetooth.PROP_READ,
             value=None)
+        self.__event_char = event_service.characteristic(
+            uuid=uuid2bytes(self.__bt_event_char_id),
+            properties=Bluetooth.PROP_READ | Bluetooth.PROP_NOTIFY | Bluetooth.PROP_INDICATE | Bluetooth.PROP_BROADCAST, # pylint: disable=C0301
+            value=None)
+
         # Add callbacks:
         self.bluetooth.callback(
             trigger=Bluetooth.CLIENT_CONNECTED | Bluetooth.CLIENT_DISCONNECTED,
             handler=self.__on_connection_status_changed)
-        pair_write.callback(
+        self.__pair_char.callback(
             trigger=Bluetooth.CHAR_WRITE_EVENT,
             handler=self.__on_pair_write,
             arg=None)
-        unpair_write.callback(
+        self.__unpair_char.callback(
             trigger=Bluetooth.CHAR_WRITE_EVENT,
             handler=self.__on_unpair_write,
             arg=None)
-        sync_read.callback(
+        self.__data_char.callback(
             trigger=Bluetooth.CHAR_READ_EVENT,
-            handler=self.__on_sync_read,
+            handler=self.__on_data_read,
+            arg=None)
+        self.__event_char.callback(
+            trigger=Bluetooth.CHAR_READ_EVENT,
+            handler=self.__on_event_read,
             arg=None)
         # Start advertising:
         self.bluetooth.advertise(True)
@@ -123,20 +141,27 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__on_client_unpaired(client_id)
         print("unpair_write: ", client_id)
 
-    def __on_sync_read(self, ch): # pylint: disable=C0103
+    def __on_data_read(self, ch): # pylint: disable=C0103
         """
-        __on_sync_read
-        Triggered from the sync-data characteristic.
+        __on_data_read
+        Triggered from the data characteristic.
         """
-        data = self.__get_next_sync_data()
+        data = self.__get_next_data_item()
         ch.value(data)
-        print("sync_read: ", data)
+        print("data_read: ", data)
 
-    def __on_sync_event_read(self, ch): # pylint: disable=C0103
+    def __on_event_read(self, ch): # pylint: disable=C0103
         """
-        __on_sync_event_read
-        Triggered from the sync-event characteristic.
+        __on_event_read
+        Triggered from the event characteristic.
         """
-        data = self.__get_next_sync_event()
-        ch.value(data)
-        print("sync_event_read: ", data)
+        # data = self.__get_next_event_item()
+        # ch.value(data)
+        # print("event_read: ", data)
+
+    def send_event_notification(self, event):
+        """
+        send_event_notification
+        """
+        self.__event_char.value(event)
+        print("Notifying client of event: ", event)

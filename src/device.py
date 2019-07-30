@@ -15,7 +15,7 @@ from src.bluetooth import BluetoothServer
 import ujson  # pylint: disable=F0401
 from machine import Pin # pylint: disable=F0401
 
-HUMIDITY_THRESHOLD = 90.0
+HUMIDITY_THRESHOLD = 50
 
 class Device: # pylint: disable=C1001
     """
@@ -36,8 +36,8 @@ class Device: # pylint: disable=C1001
             client_ids=self.device_info.client_ids,
             on_client_paired=self.__on_client_paired,
             on_client_unpaired=self.__on_client_unpaired,
-            get_next_sync_data=self.get_next_sync_data_json,
-            get_next_sync_event=self.get_next_sync_event_json)
+            get_next_data_item=self.get_next_data_json,
+            get_next_event_item=self.get_next_event_json)
 
     def init_device_info(self):
         """
@@ -95,10 +95,11 @@ class Device: # pylint: disable=C1001
             event = Event()
             self.events.push(event)
             print("Event detected! ", last_data.humidity)
+            self.bluetooth_server.send_event_notification(self.get_next_event_json())
 
-    def get_next_sync_data_json(self):
+    def get_next_data_json(self):
         """
-        get_next_sync_data_json
+        get_next_data_json
         Removes oldest data point from cache, and returns as JSON string.
         """
         item = self.sensor_data.deque()
@@ -108,9 +109,9 @@ class Device: # pylint: disable=C1001
             result["data"] = item.to_dict()
         return ujson.dumps(result)
 
-    def get_next_sync_event_json(self):
+    def get_next_event_json(self):
         """
-        get_next_sync_event_json
+        get_next_event_json
         Removes oldest event from cache, and returns as JSON string.
         """
         event = self.events.deque()
