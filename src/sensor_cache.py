@@ -4,6 +4,8 @@ sensor_cache.py
 A cache that holds sensor data until it is synced.
 """
 
+HUMIDITY_SWING_SIZE = 3 # number of items to consider delta increasing or decreasing
+
 class SensorCache: # pylint: disable=C1001
     """
     SensorCache
@@ -29,13 +31,31 @@ class SensorCache: # pylint: disable=C1001
             self.deque()
         self.__cache.append(sensor_data)
 
-    def peek(self):
+    def peek(self, index=-1):
         """
         peek
         returns the top of the stack without removing it.
         """
         if self.__cache:
-            return self.__cache[-1]
+            return self.__cache[index]
+        return None
+
+    def peek_n(self, n=1): # pylint: disable=C0103
+        """
+        peek_n
+        returns n items from top of stack without removing.
+        """
+        if self.__cache:
+            return self.__cache[-1 * n:]
+        return []
+
+    def pop(self, index=None):
+        """
+        deque
+        removes and returns the top of the stack (or the item at specified index)
+        """
+        if self.__cache:
+            return self.__cache.pop(index)
         return None
 
     def deque(self):
@@ -43,9 +63,37 @@ class SensorCache: # pylint: disable=C1001
         deque
         removes and returns the first item from the cache
         """
-        if self.__cache:
-            return self.__cache.pop(0)
-        return None
+        return self.pop(0)
+
+    def is_humidity_decreasing(self, swing_size=HUMIDITY_SWING_SIZE):
+        """
+        is_humidity_decreasing
+        returns true if the humidity is decreasing
+        """
+        if self.length() < swing_size:
+            return False
+        items = self.peek_n(swing_size)
+        prev_item = items.pop(0)
+        for item in items:
+            if prev_item.humidity < item.humidity:
+                return False
+            prev_item = item
+        return True
+
+    def is_humidity_increasing(self, swing_size=HUMIDITY_SWING_SIZE):
+        """
+        is_humidity_increasing
+        returns true if the humidity is increasing
+        """
+        if self.length() < swing_size:
+            return False
+        items = self.peek_n(swing_size)
+        prev_item = items.pop(0)
+        for item in items:
+            if prev_item.humidity > item.humidity:
+                return False
+            prev_item = item
+        return True
 
 def calculate_cache_size(duration, interval):
     """

@@ -16,10 +16,12 @@ BT_PAIR_SVC_ID = '0c060381-c0e0-4078-bcde-6fb7dbed763b'
 BT_UNPAIR_SVC_ID = 'd66b351a-0d06-4341-a050-a854aa552a95'
 BT_DATA_SVC_ID = '9dce6733-198c-46e3-b138-9cce67b3d96c'
 BT_EVENT_SVC_ID = '48241209-0402-41c0-a070-389cce673399'
+BT_EVENT_NOTIF_SVC_ID = '77e90f18-69ae-4283-bf53-f940e4588afa'
 BT_PAIR_CHAR_ID = '369bcde6-73b9-4cae-97eb-753a9dcee773'
 BT_UNPAIR_CHAR_ID = 'b95caed7-eb75-4a9d-8e67-b359acd6eb75'
 BT_DATA_CHAR_ID = 'cae57239-9c4e-4793-89e4-72b9dc6e379b'
 BT_EVENT_CHAR_ID = '6db65bad-d66b-45da-adf6-7bbd5eaf57ab'
+BT_EVENT_NOTIF_CHAR_ID = 'a647940e-ebc1-4bd4-b273-a600929476cd'
 
 # pylint: disable=C0325
 class DeviceInfo: # pylint: disable=C1001,R0902
@@ -37,10 +39,12 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             self.bt_unpair_svc_id = initial_values.get('bt_unpair_svc_id') or ''
             self.bt_data_svc_id = initial_values.get('bt_data_svc_id') or ''
             self.bt_event_svc_id = initial_values.get('bt_event_svc_id') or ''
+            self.bt_event_notif_svc_id = initial_values.get('bt_event_notif_svc_id') or ''
             self.bt_pair_char_id = initial_values.get('bt_pair_char_id') or ''
             self.bt_unpair_char_id = initial_values.get('bt_unpair_char_id') or ''
             self.bt_data_char_id = initial_values.get('bt_data_char_id') or ''
             self.bt_event_char_id = initial_values.get('bt_event_char_id') or ''
+            self.bt_event_notif_char_id = initial_values.get('bt_event_notif_char_id') or ''
 
         if generate_initial_values:
             self.__generate_initial_values()
@@ -58,10 +62,12 @@ class DeviceInfo: # pylint: disable=C1001,R0902
         self.bt_unpair_svc_id = BT_UNPAIR_SVC_ID
         self.bt_data_svc_id = BT_DATA_SVC_ID
         self.bt_event_svc_id = BT_EVENT_SVC_ID
+        self.bt_event_notif_svc_id = BT_EVENT_NOTIF_SVC_ID
         self.bt_pair_char_id = BT_PAIR_CHAR_ID
         self.bt_unpair_char_id = BT_UNPAIR_CHAR_ID
         self.bt_data_char_id = BT_DATA_CHAR_ID
         self.bt_event_char_id = BT_EVENT_CHAR_ID
+        self.bt_event_notif_char_id = BT_EVENT_NOTIF_CHAR_ID
 
     def get_bluetooth_ids(self):
         """
@@ -74,10 +80,12 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             "bt_unpair_svc_id": self.bt_unpair_svc_id,
             "bt_data_svc_id": self.bt_data_svc_id,
             "bt_event_svc_id": self.bt_event_svc_id,
+            "bt_event_notif_svc_id": self.bt_event_notif_svc_id,
             "bt_pair_char_id": self.bt_pair_char_id,
             "bt_unpair_char_id": self.bt_unpair_char_id,
             "bt_data_char_id": self.bt_data_char_id,
-            "bt_event_char_id": self.bt_event_char_id
+            "bt_event_char_id": self.bt_event_char_id,
+            "bt_event_notif_char_id": self.bt_event_notif_char_id
             }
 
     def to_json(self):
@@ -94,10 +102,12 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             "bt_unpair_svc_id": self.bt_unpair_svc_id,
             "bt_data_svc_id": self.bt_data_svc_id,
             "bt_event_svc_id": self.bt_event_svc_id,
+            "bt_event_notif_svc_id": self.bt_event_notif_svc_id,
             "bt_pair_char_id": self.bt_pair_char_id,
             "bt_unpair_char_id": self.bt_unpair_char_id,
             "bt_data_char_id": self.bt_data_char_id,
-            "bt_event_char_id": self.bt_event_char_id
+            "bt_event_char_id": self.bt_event_char_id,
+            "bt_event_notif_char_id": self.bt_event_notif_char_id
             })
 
 # Functions:

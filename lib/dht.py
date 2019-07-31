@@ -2,8 +2,8 @@
 DHT
 Class for reading DHT humidity/temperature sensor data
 """
-import time
 import pycom
+import utime # pylint: disable=E0401
 from machine import Pin # pylint: disable=E0401
 
 def bits_to_bytes(bits):
@@ -66,7 +66,7 @@ class DHT: # pylint: disable=C1001,R0903
         self.__pin = Pin(pin, mode=Pin.OPEN_DRAIN)
         self.__dhttype = sensor
         self.__pin(1)
-        time.sleep(1.0)
+        utime.sleep(1.0)
 
     def read(self):
         """
@@ -109,4 +109,4 @@ class DHT: # pylint: disable=C1001,R0903
 
     def __send_and_sleep(self, output, mysleep):
         self.__pin(output)
-        time.sleep(mysleep)
+        utime.sleep(mysleep)
