@@ -15,7 +15,8 @@ from src.bluetooth import BluetoothServer
 import ujson  # pylint: disable=F0401
 from machine import Pin # pylint: disable=F0401
 
-HUMIDITY_THRESHOLD = 50
+HUMIDITY_THRESHOLD = 90
+MIN_TIME_BETWEEN_EVENTS = 60 # 1 minute.
 
 class Device: # pylint: disable=C1001
     """
@@ -29,6 +30,7 @@ class Device: # pylint: disable=C1001
         self.init_device_info()
         self.dht_sensor = DHT(Pin('P11', mode=Pin.OPEN_DRAIN), 1)
         self.sensor_data = SensorCache(calculate_cache_size(duration, interval))
+        self.interval = interval
         self.events = EventCache(num_events)
         self.bluetooth_server = BluetoothServer(
             device_id=self.device_info.device_id,
@@ -89,13 +91,23 @@ class Device: # pylint: disable=C1001
         """
         check_for_event
         Analyzes sensor data, and creates a new Event object if necessary
+
+        Conditions:
+        - humidity must have been increasing for specified period of time
+        - humidity value must exceed humidity threshold
+        - an event must not have been fired within specified time.
         """
         last_data = self.sensor_data.peek()
-        if last_data and last_data.humidity >= HUMIDITY_THRESHOLD:
+        last_event = self.events.peek()
+        # conditions:
+        humidity_exceeds_threshold = last_data.humidity >= HUMIDITY_THRESHOLD
+        is_humidity_increasing = self.sensor_data.is_humidity_increasing()
+        long_enough_since_last_event = True if not last_event else (last_data.timestamp - last_event.timestamp > MIN_TIME_BETWEEN_EVENTS) # pylint: disable=C0301
+
+        if is_humidity_increasing and long_enough_since_last_event and humidity_exceeds_threshold:
             event = Event()
             self.events.push(event)
-            print("Event detected! ", last_data.humidity)
-            self.bluetooth_server.send_event_notification(self.get_next_event_json())
+            self.bluetooth_server.send_event_notification(event)
 
     def get_next_data_json(self):
         """

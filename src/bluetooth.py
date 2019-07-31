@@ -32,10 +32,12 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__bt_unpair_svc_id = bluetooth_ids.get('bt_unpair_svc_id')
         self.__bt_data_svc_id = bluetooth_ids.get('bt_data_svc_id')
         self.__bt_event_svc_id = bluetooth_ids.get('bt_event_svc_id')
+        self.__bt_event_notif_svc_id = bluetooth_ids.get('bt_event_notif_svc_id')
         self.__bt_pair_char_id = bluetooth_ids.get('bt_pair_char_id')
         self.__bt_unpair_char_id = bluetooth_ids.get('bt_unpair_char_id')
         self.__bt_data_char_id = bluetooth_ids.get('bt_data_char_id')
         self.__bt_event_char_id = bluetooth_ids.get('bt_event_char_id')
+        self.__bt_event_notif_char_id = bluetooth_ids.get('bt_event_notif_char_id')
         self.__on_client_paired = on_client_paired
         self.__on_client_unpaired = on_client_unpaired
         self.__get_next_data_item = get_next_data_item
@@ -62,6 +64,9 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         event_service = self.bluetooth.service(
             uuid=uuid2bytes(self.__bt_event_svc_id),
             isprimary=True)
+        event_notif_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_event_notif_svc_id),
+            isprimary=True)
 
         # Create characteristics for services:
         self.__pair_char = pair_service.characteristic(
@@ -78,7 +83,11 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
             value=None)
         self.__event_char = event_service.characteristic(
             uuid=uuid2bytes(self.__bt_event_char_id),
-            properties=Bluetooth.PROP_READ | Bluetooth.PROP_NOTIFY | Bluetooth.PROP_INDICATE | Bluetooth.PROP_BROADCAST, # pylint: disable=C0301
+            properties=Bluetooth.PROP_READ, # pylint: disable=C0301
+            value=None)
+        self.__event_notif_char = event_notif_service.characteristic(
+            uuid=uuid2bytes(self.__bt_event_notif_char_id),
+            properties=Bluetooth.PROP_NOTIFY | Bluetooth.PROP_INDICATE,
             value=None)
 
         # Add callbacks:
@@ -155,13 +164,13 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         __on_event_read
         Triggered from the event characteristic.
         """
-        # data = self.__get_next_event_item()
-        # ch.value(data)
-        # print("event_read: ", data)
+        data = self.__get_next_event_item()
+        ch.value(data)
+        print("event_read: ", data)
 
     def send_event_notification(self, event):
         """
         send_event_notification
         """
-        self.__event_char.value(event)
-        print("Notifying client of event: ", event)
+        print("Notifying client of event: ", event.event_id)
+        self.__event_notif_char.value("new_event=" + event.event_id)
