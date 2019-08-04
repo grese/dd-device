@@ -5,20 +5,23 @@ bluetooth.py
 Bluetooth connection, services, and client management
 """
 
+from machine import RTC # pylint: disable=F0401
 from network import Bluetooth # pylint: disable=F0401
 from lib.uuid import uuid2bytes
+from lib.helpers import set_current_time, current_timestamp
 
 BT_ADV_PREFIX = 'dd-device-'
 BT_MANUFACTURER_NAME = 'diaper-detective'
 BT_DEVICE_VERSION = 'v0.0.1'
 EVENT_CLEAR_PREFIX = 'event_cleared='
+TIME_SETUP_PREFIX = 'setup_time='
 
 class BluetoothServer: # pylint: disable=C1001,R0903,R0902
     """
     BluetoothServer
     Advertises bluetooth services, handles connection and clients
     """
-    def __init__(self, # pylint: disable=W0102,R0913
+    def __init__(self, # pylint: disable=W0102,R0913,R0914
                  device_id='',
                  bluetooth_ids={},
                  client_ids=set(),
@@ -30,12 +33,14 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         # Read bluetooth IDs:
         self.__device_id = device_id
         self.__bt_id = bluetooth_ids.get('bt_id')
+        self.__bt_setup_svc_id = bluetooth_ids.get('bt_setup_svc_id')
         self.__bt_pair_svc_id = bluetooth_ids.get('bt_pair_svc_id')
         self.__bt_unpair_svc_id = bluetooth_ids.get('bt_unpair_svc_id')
         self.__bt_data_svc_id = bluetooth_ids.get('bt_data_svc_id')
         self.__bt_event_svc_id = bluetooth_ids.get('bt_event_svc_id')
         self.__bt_event_notif_svc_id = bluetooth_ids.get('bt_event_notif_svc_id')
         self.__bt_event_clear_svc_id = bluetooth_ids.get('bt_event_clear_svc_id')
+        self.__bt_setup_char_id = bluetooth_ids.get('bt_setup_char_id')
         self.__bt_pair_char_id = bluetooth_ids.get('bt_pair_char_id')
         self.__bt_unpair_char_id = bluetooth_ids.get('bt_unpair_char_id')
         self.__bt_data_char_id = bluetooth_ids.get('bt_data_char_id')
@@ -57,6 +62,9 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
             manufacturer_data=BT_MANUFACTURER_NAME,
             service_data=BT_DEVICE_VERSION)
         # Create services:
+        setup_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_setup_svc_id),
+            isprimary=True)
         pair_service = self.bluetooth.service(
             uuid=uuid2bytes(self.__bt_pair_svc_id),
             isprimary=True)
@@ -77,6 +85,10 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
             isprimary=True)
 
         # Create characteristics for services:
+        self.__setup_char = setup_service.characteristic(
+            uuid=uuid2bytes(self.__bt_setup_char_id),
+            properties=Bluetooth.PROP_WRITE,
+            value=None)
         self.__pair_char = pair_service.characteristic(
             uuid=uuid2bytes(self.__bt_pair_char_id),
             properties=Bluetooth.PROP_WRITE,
@@ -106,6 +118,10 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.bluetooth.callback(
             trigger=Bluetooth.CLIENT_CONNECTED | Bluetooth.CLIENT_DISCONNECTED,
             handler=self.__on_connection_status_changed)
+        self.__setup_char.callback(
+            trigger=Bluetooth.CHAR_WRITE_EVENT,
+            handler=self.__on_setup_write,
+            arg=None)
         self.__pair_char.callback(
             trigger=Bluetooth.CHAR_WRITE_EVENT,
             handler=self.__on_pair_write,
@@ -150,6 +166,24 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
     def __on_client_disconnected(self, bt_o): # pylint: disable=R0201
         adv = bt_o.get_adv()
         print('Client disconnected: ', adv)
+
+    def __on_setup_write(self, ch):# pylint: disable=R0201,C0103
+        """
+        __on_setup_write
+        Setup device
+        """
+        data = ch.value()
+        if TIME_SETUP_PREFIX in data:
+            time_vals = data.replace(TIME_SETUP_PREFIX, "", 1)
+            time_vals = [int(x) for x in time_vals.split(",")]
+            set_current_time((time_vals[0],
+                              time_vals[1],
+                              time_vals[2],
+                              time_vals[3],
+                              time_vals[4],
+                              time_vals[5]))
+            print("Current timestamp: ", current_timestamp())
+            print("setup_write: ", ch.value(), RTC().now())
 
     def __on_pair_write(self, ch): # pylint: disable=C0103
         """

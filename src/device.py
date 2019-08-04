@@ -16,7 +16,7 @@ import ujson  # pylint: disable=F0401
 from machine import Pin # pylint: disable=F0401
 
 HUMIDITY_THRESHOLD = 90
-HUMIDITY_DRY_THRESHOLD = 60
+HUMIDITY_DRY_THRESHOLD = 80
 MIN_TIME_BETWEEN_EVENTS = 60 # 1 minute.
 
 class Device: # pylint: disable=C1001

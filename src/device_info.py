@@ -14,6 +14,7 @@ DEVICE_INFO_PATH = '/flash/device-info.json'
 DEVICE_ID = '5d2e97cb6532994c'
 BT_ID = '26130984-4221-4008-8402-01008040a050'
 # IDs for bluetooth services & characteristics (same on every device)
+BT_SETUP_SVC_ID = '5b2d96cb-6532-494c-a693-49249249a4d2'
 BT_PAIR_SVC_ID = '0c060381-c0e0-4078-bcde-6fb7dbed763b'
 BT_UNPAIR_SVC_ID = 'd66b351a-0d06-4341-a050-a854aa552a95'
 BT_DATA_SVC_ID = '9dce6733-198c-46e3-b138-9cce67b3d96c'
@@ -26,6 +27,7 @@ BT_DATA_CHAR_ID = 'cae57239-9c4e-4793-89e4-72b9dc6e379b'
 BT_EVENT_CHAR_ID = '6db65bad-d66b-45da-adf6-7bbd5eaf57ab'
 BT_EVENT_NOTIF_CHAR_ID = 'a647940e-ebc1-4bd4-b273-a600929476cd'
 BT_EVENT_CLEAR_CHAR_ID = 'ee7a4fc7-6305-48e1-92e9-7c1c9be13b63'
+BT_SETUP_CHAR_ID = '2e97cbe5-f2f9-4c3e-9f0f-0783c1603018'
 
 # pylint: disable=C0325
 class DeviceInfo: # pylint: disable=C1001,R0902
@@ -39,12 +41,14 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             self.last_reset_time = initial_values.get('last_reset_time') or ''
             self.client_ids = set(initial_values.get('client_ids') or [])
             self.bt_id = initial_values.get('bt_id') or ''
+            self.bt_setup_svc_id = initial_values.get('bt_setup_svc_id') or ''
             self.bt_pair_svc_id = initial_values.get('bt_pair_svc_id') or ''
             self.bt_unpair_svc_id = initial_values.get('bt_unpair_svc_id') or ''
             self.bt_data_svc_id = initial_values.get('bt_data_svc_id') or ''
             self.bt_event_svc_id = initial_values.get('bt_event_svc_id') or ''
             self.bt_event_notif_svc_id = initial_values.get('bt_event_notif_svc_id') or ''
             self.bt_event_clear_svc_id = initial_values.get('bt_event_clear_svc_id') or ''
+            self.bt_setup_char_id = initial_values.get('bt_setup_char_id') or ''
             self.bt_pair_char_id = initial_values.get('bt_pair_char_id') or ''
             self.bt_unpair_char_id = initial_values.get('bt_unpair_char_id') or ''
             self.bt_data_char_id = initial_values.get('bt_data_char_id') or ''
@@ -64,12 +68,14 @@ class DeviceInfo: # pylint: disable=C1001,R0902
         self.last_reset_time = current_timestamp()
         self.client_ids = set()
         self.bt_id = BT_ID
+        self.bt_setup_svc_id = BT_SETUP_SVC_ID
         self.bt_pair_svc_id = BT_PAIR_SVC_ID
         self.bt_unpair_svc_id = BT_UNPAIR_SVC_ID
         self.bt_data_svc_id = BT_DATA_SVC_ID
         self.bt_event_svc_id = BT_EVENT_SVC_ID
         self.bt_event_notif_svc_id = BT_EVENT_NOTIF_SVC_ID
         self.bt_event_clear_svc_id = BT_EVENT_CLEAR_SVC_ID
+        self.bt_setup_char_id = BT_SETUP_CHAR_ID
         self.bt_pair_char_id = BT_PAIR_CHAR_ID
         self.bt_unpair_char_id = BT_UNPAIR_CHAR_ID
         self.bt_data_char_id = BT_DATA_CHAR_ID
@@ -84,12 +90,14 @@ class DeviceInfo: # pylint: disable=C1001,R0902
         """
         return {
             "bt_id": self.bt_id,
+            "bt_setup_svc_id": self.bt_setup_svc_id,
             "bt_pair_svc_id": self.bt_pair_svc_id,
             "bt_unpair_svc_id": self.bt_unpair_svc_id,
             "bt_data_svc_id": self.bt_data_svc_id,
             "bt_event_svc_id": self.bt_event_svc_id,
             "bt_event_notif_svc_id": self.bt_event_notif_svc_id,
             "bt_event_clear_svc_id": self.bt_event_clear_svc_id,
+            "bt_setup_char_id": self.bt_setup_char_id,
             "bt_pair_char_id": self.bt_pair_char_id,
             "bt_unpair_char_id": self.bt_unpair_char_id,
             "bt_data_char_id": self.bt_data_char_id,
@@ -108,12 +116,14 @@ class DeviceInfo: # pylint: disable=C1001,R0902
             "last_reset_time": self.last_reset_time,
             "client_ids": list(self.client_ids or []),
             "bt_id": self.bt_id,
+            "bt_setup_svc_id": self.bt_setup_svc_id,
             "bt_pair_svc_id": self.bt_pair_svc_id,
             "bt_unpair_svc_id": self.bt_unpair_svc_id,
             "bt_data_svc_id": self.bt_data_svc_id,
             "bt_event_svc_id": self.bt_event_svc_id,
             "bt_event_notif_svc_id": self.bt_event_notif_svc_id,
             "bt_event_clear_svc_id": self.bt_event_clear_svc_id,
+            "bt_setup_char_id": self.bt_setup_char_id,
             "bt_pair_char_id": self.bt_pair_char_id,
             "bt_unpair_char_id": self.bt_unpair_char_id,
             "bt_data_char_id": self.bt_data_char_id,
