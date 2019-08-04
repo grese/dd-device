@@ -11,6 +11,7 @@ from lib.uuid import uuid2bytes
 BT_ADV_PREFIX = 'dd-device-'
 BT_MANUFACTURER_NAME = 'diaper-detective'
 BT_DEVICE_VERSION = 'v0.0.1'
+EVENT_CLEAR_PREFIX = 'event_cleared='
 
 class BluetoothServer: # pylint: disable=C1001,R0903,R0902
     """
@@ -24,7 +25,8 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
                  on_client_paired=None,
                  on_client_unpaired=None,
                  get_next_data_item=None,
-                 get_next_event_item=None):
+                 get_next_event_item=None,
+                 clear_event=None):
         # Read bluetooth IDs:
         self.__device_id = device_id
         self.__bt_id = bluetooth_ids.get('bt_id')
@@ -33,15 +35,18 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__bt_data_svc_id = bluetooth_ids.get('bt_data_svc_id')
         self.__bt_event_svc_id = bluetooth_ids.get('bt_event_svc_id')
         self.__bt_event_notif_svc_id = bluetooth_ids.get('bt_event_notif_svc_id')
+        self.__bt_event_clear_svc_id = bluetooth_ids.get('bt_event_clear_svc_id')
         self.__bt_pair_char_id = bluetooth_ids.get('bt_pair_char_id')
         self.__bt_unpair_char_id = bluetooth_ids.get('bt_unpair_char_id')
         self.__bt_data_char_id = bluetooth_ids.get('bt_data_char_id')
         self.__bt_event_char_id = bluetooth_ids.get('bt_event_char_id')
         self.__bt_event_notif_char_id = bluetooth_ids.get('bt_event_notif_char_id')
+        self.__bt_event_clear_char_id = bluetooth_ids.get('bt_event_clear_char_id')
         self.__on_client_paired = on_client_paired
         self.__on_client_unpaired = on_client_unpaired
         self.__get_next_data_item = get_next_data_item
         self.__get_next_event_item = get_next_event_item
+        self.__clear_event = clear_event
         # Save currently paired clients
         self.client_ids = client_ids
         # Setup bluetooth & configure advertisement.
@@ -67,6 +72,9 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         event_notif_service = self.bluetooth.service(
             uuid=uuid2bytes(self.__bt_event_notif_svc_id),
             isprimary=True)
+        event_clear_service = self.bluetooth.service(
+            uuid=uuid2bytes(self.__bt_event_clear_svc_id),
+            isprimary=True)
 
         # Create characteristics for services:
         self.__pair_char = pair_service.characteristic(
@@ -89,6 +97,10 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
             uuid=uuid2bytes(self.__bt_event_notif_char_id),
             properties=Bluetooth.PROP_NOTIFY | Bluetooth.PROP_INDICATE,
             value=None)
+        self.__event_clear_char = event_clear_service.characteristic(
+            uuid=uuid2bytes(self.__bt_event_clear_char_id),
+            properties=Bluetooth.PROP_WRITE,
+            value=None)
 
         # Add callbacks:
         self.bluetooth.callback(
@@ -109,6 +121,10 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         self.__event_char.callback(
             trigger=Bluetooth.CHAR_READ_EVENT,
             handler=self.__on_event_read,
+            arg=None)
+        self.__event_clear_char.callback(
+            trigger=Bluetooth.CHAR_WRITE_EVENT,
+            handler=self.__on_event_clear,
             arg=None)
         # Start advertising:
         self.bluetooth.advertise(True)
@@ -167,6 +183,16 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         data = self.__get_next_event_item()
         ch.value(data)
         print("event_read: ", data)
+
+    def __on_event_clear(self, ch): # pylint: disable=C0103
+        """
+        __on_event_clear
+        Triggered from event_clear characteristic
+        """
+        data = ch.value()
+        if EVENT_CLEAR_PREFIX in data:
+            e_id = data.replace(EVENT_CLEAR_PREFIX, "", 1)
+            self.__clear_event(e_id)
 
     def send_event_notification(self, event):
         """

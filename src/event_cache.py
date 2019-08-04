@@ -13,6 +13,23 @@ class EventCache: # pylint: disable=C1001
         self.__max_size = max_size
         self.__cache = []
 
+    def remove_event(self, event):
+        """
+        remove_event
+        removes event from cache
+        """
+        self.__cache.remove(event)
+
+    def find_by_id(self, event_id):
+        """
+        find_by_id
+        finds an event by id
+        """
+        for e in self.__cache: # pylint: disable=C0103
+            if e.event_id == event_id:
+                return e
+        return None
+
     def length(self):
         """
         length
