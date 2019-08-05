@@ -4,6 +4,8 @@ event_cache.py
 A cache that holds sensor data until it is synced.
 """
 
+from src.event import EventType
+
 class EventCache: # pylint: disable=C1001
     """
     EventCache
@@ -12,6 +14,33 @@ class EventCache: # pylint: disable=C1001
     def __init__(self, max_size):
         self.__max_size = max_size
         self.__cache = []
+
+    def has_unhandled_events(self):
+        """
+        has_unhandled_events
+        Returns true if there are events with type one or two.
+        """
+        for evt in self.__cache:
+            if evt.event_type != EventType.changed:
+                return True
+        return False
+
+    def remove_event(self, event):
+        """
+        remove_event
+        removes event from cache
+        """
+        self.__cache.remove(event)
+
+    def find_by_id(self, event_id):
+        """
+        find_by_id
+        finds an event by id
+        """
+        for e in self.__cache: # pylint: disable=C0103
+            if e.event_id == event_id:
+                return e
+        return None
 
     def length(self):
         """
