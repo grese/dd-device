@@ -160,7 +160,7 @@ class Device: # pylint: disable=C1001
         # Generate the 'change' event, and pass to client.
         new_event = Event(EventType.changed)
         self.events.push(new_event)
-        self.bluetooth_server.send_event_notification(event)
+        self.bluetooth_server.send_event_notification(new_event)
 
     def __on_client_paired(self, client_id):
         """

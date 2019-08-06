@@ -26,7 +26,7 @@ DD_DEVICE = Device(
     num_events=EVENTS_COUNT
     )
 
-for r in range(20):
+for r in range(200):
     DD_DEVICE.read_sensor_data() # create humidity_temp reading.
     DD_DEVICE.check_for_event() # check sensor data for event
     utime.sleep(DATA_INTERVAL) # sleep until time to create new reading

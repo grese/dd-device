@@ -74,7 +74,8 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
             isprimary=True)
         event_service = self.bluetooth.service(
             uuid=uuid2bytes(self.__bt_event_svc_id),
-            isprimary=True)
+            isprimary=True,
+            nbr_chars=2)
         event_notif_service = self.bluetooth.service(
             uuid=uuid2bytes(self.__bt_event_notif_svc_id),
             isprimary=True)
@@ -170,7 +171,7 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         __on_setup_write
         Setup device
         """
-        data = ch.value()
+        data = ch.value().decode()
         print("setup_write: ", data)
         if TIME_SETUP_PREFIX in data:
             time_vals = data.replace(TIME_SETUP_PREFIX, "", 1)
@@ -221,7 +222,7 @@ class BluetoothServer: # pylint: disable=C1001,R0903,R0902
         __on_event_clear
         Triggered from event_clear characteristic
         """
-        data = ch.value()
+        data = ch.value().decode()
         if EVENT_CLEAR_PREFIX in data:
             e_id = data.replace(EVENT_CLEAR_PREFIX, "", 1)
             self.__clear_event(e_id)
