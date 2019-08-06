@@ -3,6 +3,8 @@
 event_cache.py
 A cache that holds sensor data until it is synced.
 """
+import utime # pylint: disable=E0401
+from src.event import EventType
 
 class EventCache: # pylint: disable=C1001
     """
@@ -12,6 +14,49 @@ class EventCache: # pylint: disable=C1001
     def __init__(self, max_size):
         self.__max_size = max_size
         self.__cache = []
+        self.__last_dirty_timestamp = 0
+        self.__last_clear_timestamp = 0
+
+    def time_since_last_dirty_event(self):
+        """
+        time_since_last_dirty_event
+        Returns time since last dirty event
+        """
+        return utime.time() - self.__last_dirty_timestamp
+
+    def time_since_last_clear_event(self):
+        """
+        time_since_last_clear_event
+        Returns time since last dirty event
+        """
+        return utime.time() - self.__last_clear_timestamp
+
+    def has_unhandled_events(self):
+        """
+        has_unhandled_events
+        Returns true if there are events with type one or two.
+        """
+        for evt in self.__cache:
+            if evt.event_type != EventType.changed:
+                return True
+        return False
+
+    def remove_event(self, event):
+        """
+        remove_event
+        removes event from cache
+        """
+        self.__cache.remove(event)
+
+    def find_by_id(self, event_id):
+        """
+        find_by_id
+        finds an event by id
+        """
+        for e in self.__cache: # pylint: disable=C0103
+            if e.event_id == event_id:
+                return e
+        return None
 
     def length(self):
         """
@@ -28,6 +73,11 @@ class EventCache: # pylint: disable=C1001
         if len(self.__cache) == self.__max_size:
             self.deque()
         self.__cache.append(event)
+
+        if event.event_type == EventType.changed:
+            self.__last_clear_timestamp = event.timestamp
+        else:
+            self.__last_dirty_timestamp = event.timestamp
 
     def peek(self):
         """

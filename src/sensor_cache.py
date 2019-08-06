@@ -5,6 +5,7 @@ A cache that holds sensor data until it is synced.
 """
 
 HUMIDITY_SWING_SIZE = 3 # number of items to consider delta increasing or decreasing
+MIN_HUMIDITY_CHANGE = 10
 
 class SensorCache: # pylint: disable=C1001
     """
@@ -78,7 +79,7 @@ class SensorCache: # pylint: disable=C1001
             if prev_item.humidity < item.humidity:
                 return False
             prev_item = item
-        return True
+        return items[0].humidity - items[-1].humidity > MIN_HUMIDITY_CHANGE
 
     def is_humidity_increasing(self, swing_size=HUMIDITY_SWING_SIZE):
         """
@@ -93,6 +94,7 @@ class SensorCache: # pylint: disable=C1001
             if prev_item.humidity > item.humidity:
                 return False
             prev_item = item
+        # return items[-1].humidity - items[0].humidity > MIN_HUMIDITY_CHANGE
         return True
 
 def calculate_cache_size(duration, interval):
