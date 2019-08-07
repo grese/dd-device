@@ -15,9 +15,10 @@ from src.bluetooth import BluetoothServer
 import ujson  # pylint: disable=F0401
 from machine import Pin # pylint: disable=F0401
 
-HUMIDITY_THRESHOLD = 90
-HUMIDITY_DRY_THRESHOLD = 80
+HUMIDITY_THRESHOLD = 99.1
+MIN_PERCENT_DIFFERENCE = 0.1
 MIN_TIME_BETWEEN_EVENTS = 60 # 1 minute.
+MIN_DATA_POINTS = 6 # 30 seconds
 
 class Device: # pylint: disable=C1001
     """
@@ -104,23 +105,17 @@ class Device: # pylint: disable=C1001
         - humidity must have been decreasing for specified period of time.
         - must have been long enough since last event was fired.
         """
+        if self.sensor_data.length() < MIN_DATA_POINTS:
+            return
+
         last_data = self.sensor_data.peek()
-        last_event = self.events.peek()
-        # dirty event conditions:
-        humidity_exceeds_threshold = last_data.humidity >= HUMIDITY_THRESHOLD
-        is_humidity_increasing = self.sensor_data.is_humidity_increasing()
-        long_enough_since_last_event = True if not last_event else (last_data.timestamp - last_event.timestamp > MIN_TIME_BETWEEN_EVENTS) # pylint: disable=C0301
-        # change event conditions:
-        is_humidity_decreasing = self.sensor_data.is_humidity_decreasing()
-        humidity_dry_enough = last_data.humidity <= HUMIDITY_DRY_THRESHOLD
+        current_humidity = last_data.humidity
+        average_humidity = self.sensor_data.get_average_humidity()
+        percent_diff_from_average = (abs(current_humidity - average_humidity) / ((current_humidity + average_humidity) / 2)) * 100 # pylint: disable=C0301
+        long_enough_since_last_event = self.events.time_since_last_dirty_event() > MIN_TIME_BETWEEN_EVENTS # pylint: disable=C0301
 
-        event = None
-        if is_humidity_increasing and long_enough_since_last_event and humidity_exceeds_threshold:
+        if long_enough_since_last_event and current_humidity > HUMIDITY_THRESHOLD and current_humidity > average_humidity and percent_diff_from_average > MIN_PERCENT_DIFFERENCE: # pylint: disable=C0301
             event = Event()
-        elif is_humidity_decreasing and long_enough_since_last_event and humidity_dry_enough:
-            event = Event(EventType.changed)
-
-        if event:
             self.events.push(event)
             self.bluetooth_server.send_event_notification(event)
 
@@ -154,9 +149,7 @@ class Device: # pylint: disable=C1001
         Removes event from cache
         """
         # Find & remove the existing event if it exists.
-        event = self.events.find_by_id(e_id)
-        if event:
-            self.events.remove_event(event)
+        self.events.remove_event(e_id)
         # Generate the 'change' event, and pass to client.
         new_event = Event(EventType.changed)
         self.events.push(new_event)

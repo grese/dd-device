@@ -16,6 +16,20 @@ class SensorCache: # pylint: disable=C1001
         self.__max_size = max_size
         self.__cache = []
 
+    def get_average_humidity(self):
+        """
+        get_average_humidity
+        """
+        items = self.peek_n(self.length())
+        return sum(d.humidity for d in items) / self.length()
+
+    def get_average_temperature(self):
+        """
+        get_average_temperature
+        """
+        items = self.peek_n(self.length())
+        return sum(d.temperature for d in items) / self.length()
+
     def length(self):
         """
         length
@@ -65,37 +79,6 @@ class SensorCache: # pylint: disable=C1001
         removes and returns the first item from the cache
         """
         return self.pop(0)
-
-    def is_humidity_decreasing(self, swing_size=HUMIDITY_SWING_SIZE):
-        """
-        is_humidity_decreasing
-        returns true if the humidity is decreasing
-        """
-        if self.length() < swing_size:
-            return False
-        items = self.peek_n(swing_size)
-        prev_item = items.pop(0)
-        for item in items:
-            if prev_item.humidity < item.humidity:
-                return False
-            prev_item = item
-        return items[0].humidity - items[-1].humidity > MIN_HUMIDITY_CHANGE
-
-    def is_humidity_increasing(self, swing_size=HUMIDITY_SWING_SIZE):
-        """
-        is_humidity_increasing
-        returns true if the humidity is increasing
-        """
-        if self.length() < swing_size:
-            return False
-        items = self.peek_n(swing_size)
-        prev_item = items.pop(0)
-        for item in items:
-            if prev_item.humidity > item.humidity:
-                return False
-            prev_item = item
-        # return items[-1].humidity - items[0].humidity > MIN_HUMIDITY_CHANGE
-        return True
 
 def calculate_cache_size(duration, interval):
     """
