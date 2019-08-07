@@ -63,7 +63,7 @@ class DHT: # pylint: disable=C1001,R0903
     __dhttype = 0
 
     def __init__(self, pin, sensor=0):
-        self.__pin = Pin(pin, mode=Pin.OPEN_DRAIN)
+        self.__pin = Pin(pin, mode=Pin.OPEN_DRAIN, pull=Pin.PULL_UP)
         self.__dhttype = sensor
         self.__pin(1)
         utime.sleep(1.0)

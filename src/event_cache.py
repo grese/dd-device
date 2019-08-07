@@ -41,12 +41,16 @@ class EventCache: # pylint: disable=C1001
                 return True
         return False
 
-    def remove_event(self, event):
+    def remove_event(self, event_id):
         """
         remove_event
         removes event from cache
         """
-        self.__cache.remove(event)
+        found_event = self.find_by_id(event_id)
+        if found_event:
+            self.__cache.remove(found_event)
+        else:
+            print("Cannot remove event {}. Does not exist.".format(event_id)) # pylint: disable=C0325
 
     def find_by_id(self, event_id):
         """
